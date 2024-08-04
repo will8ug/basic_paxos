@@ -15,6 +15,7 @@ Session.vim
 .settings/
 .vs/
 *.code-workspace
+.zed/
 
 ## Tool
 .valgrindrc
@@ -69,4 +70,3 @@ package.json
 
 ## Rustdoc GUI tests
 tests/rustdoc-gui/src/**.lock
-
