@@ -124,7 +124,6 @@ impl Proposer {
             if accepted_response_count >= self.majority()
                 || total_response_count >= self.acceptors.len()
             {
-                // consensus achieved
                 break;
             }
         }
@@ -138,6 +137,8 @@ impl Proposer {
         if accepted_response_count < self.majority() {
             println!("Proposing failed");
             self.value = None;
+        } else {
+            println!("Consensus achieved");
         }
     }
 
