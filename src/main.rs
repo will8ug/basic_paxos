@@ -1,58 +1,9 @@
-mod acceptor;
-mod proposal;
-mod proposer;
-
-#[double]
-use acceptor::Acceptor;
-use mockall_double::double;
-use proposer::Proposer;
+use basic_paxos::acceptor::Acceptor;
+use basic_paxos::proposer::Proposer;
 use std::sync::{Arc, Mutex};
 
 fn main() {
-    test_1_proposer_1_acceptor_no_learner();
-    println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
-    test_1_proposer_3_acceptors_no_learner();
-    println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
     test_2_proposers_3_acceptors_no_learner();
-}
-
-fn test_1_proposer_1_acceptor_no_learner() {
-    let acceptor = Arc::new(Mutex::new(Acceptor::new()));
-    let acceptors = vec![acceptor];
-    println!("  ===== Before Start =====");
-    println!("Acceptors: {:#?}", acceptors);
-
-    let mut proposer = Proposer::new(acceptors);
-    println!("Proposers: {:#?}", proposer);
-
-    println!("  ===== Working =====");
-    let result = proposer.propose(100);
-    assert_eq!(result, Some(100));
-
-    println!("  ===== After consensus =====");
-    println!("Proposers: {:#?}", proposer);
-}
-
-fn test_1_proposer_3_acceptors_no_learner() {
-    let mut acceptors = vec![];
-    for _ in 0..3 {
-        acceptors.push(Arc::new(Mutex::new(Acceptor::new())));
-    }
-    println!("  ===== Before Start =====");
-    println!("Acceptors: {:#?}", acceptors);
-
-    let mut proposer = Proposer::new(acceptors);
-    println!("Proposers: {:#?}", proposer);
-
-    println!("  ===== Working =====");
-    let result = proposer.propose(100);
-    println!("Result: {:?}", result);
-    assert_eq!(result, Some(100));
-
-    println!("  ===== After consensus =====");
-    println!("Proposers: {:#?}", proposer);
 }
 
 fn test_2_proposers_3_acceptors_no_learner() {
