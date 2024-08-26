@@ -7,7 +7,7 @@ use common::LocalAgent;
 mod common;
 
 #[test]
-fn test_one_proposer_one_acceptor_no_learner() {
+fn test_1_proposer_1_acceptor_no_learner() {
     let local_agent = Box::new(LocalAgent::new(Acceptor::new()));
     let acceptor = Arc::new(Mutex::new(local_agent as AgentBox));
     let acceptors = vec![Arc::clone(&acceptor)];
