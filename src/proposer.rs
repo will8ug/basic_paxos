@@ -25,17 +25,31 @@ impl Proposer {
     pub fn propose(&mut self, value: u32) -> Option<u32> {
         self.value = Some(value);
 
-        let existing_accepted_value = self.initiate_prepare_request();
-        if existing_accepted_value.is_some() {
-            self.value = Some(existing_accepted_value.unwrap().value);
+        match self.initiate_prepare_request() {
+            Ok(existing_accepted_value) => {
+                if existing_accepted_value.is_some() {
+                    self.value = Some(existing_accepted_value.unwrap().value);
+                }
+            }
+            Err(err_msg) => {
+                println!("{}", err_msg);
+                return None;
+            }
         }
 
-        self.initiate_accept_request();
-
-        self.value
+        match self.initiate_accept_request() {
+            Ok(value) => {
+                println!("Consensus achieved with value [{}]", value);
+                return Some(value);
+            }
+            Err(err_msg) => {
+                println!("{}", err_msg);
+                return None;
+            }
+        }
     }
 
-    fn initiate_prepare_request(&self) -> Option<Proposal> {
+    fn initiate_prepare_request(&self) -> Result<Option<Proposal>, String> {
         let proposal_num = self.num;
 
         let (tx0, rx) = mpsc::channel();
@@ -84,13 +98,13 @@ impl Proposer {
             valid_promise_count, total_response_count, existing_accepted_value
         );
         if valid_promise_count < self.majority() {
-            panic!("Preparing failed");
+            return Err(String::from("Preparing failed"));
         }
 
-        existing_accepted_value
+        Ok(existing_accepted_value)
     }
 
-    fn initiate_accept_request(&mut self) {
+    fn initiate_accept_request(&self) -> Result<u32, String> {
         let proposal = Proposal::new(self.num, self.value.unwrap());
 
         let (tx0, rx) = mpsc::channel();
@@ -132,10 +146,9 @@ impl Proposer {
             self.majority()
         );
         if accepted_response_count < self.majority() {
-            println!("Proposing failed");
-            self.value = None;
+            Err(String::from("Accepting failed"))
         } else {
-            println!("Consensus achieved");
+            Ok(self.value.unwrap())
         }
     }
 
@@ -162,10 +175,10 @@ mod tests {
         let acceptor = mock_empty_acceptor();
         let proposer = Proposer::new(vec![acceptor]);
 
-        let existing_value_to_accept = proposer.initiate_prepare_request();
+        let prepare_result = proposer.initiate_prepare_request();
 
         assert_eq!(proposer.num, 1);
-        assert_eq!(existing_value_to_accept, None);
+        assert_eq!(prepare_result, Ok(None));
     }
 
     #[test]
@@ -176,10 +189,10 @@ mod tests {
         }
 
         let proposer = Proposer::new(acceptors);
-        let existing_value_to_accept = proposer.initiate_prepare_request();
+        let prepare_result = proposer.initiate_prepare_request();
 
         assert_eq!(proposer.num, 1);
-        assert_eq!(existing_value_to_accept, None);
+        assert_eq!(prepare_result, Ok(None));
     }
 
     #[test]
@@ -192,14 +205,13 @@ mod tests {
         }
 
         let proposer = Proposer::new(acceptors);
-        let existing_value_to_accept = proposer.initiate_prepare_request();
+        let prepare_result = proposer.initiate_prepare_request();
 
         assert_eq!(proposer.num, 1);
-        assert_eq!(existing_value_to_accept, None);
+        assert_eq!(prepare_result, Ok(None));
     }
 
     #[test]
-    #[should_panic]
     fn prepare_req_1_empty_acceptor_2_higher_promised() {
         let mut acceptors = Vec::with_capacity(3);
 
@@ -209,9 +221,9 @@ mod tests {
         }
 
         let proposer = Proposer::new(acceptors);
-        let existing_value_to_accept = proposer.initiate_prepare_request();
+        let prepare_result = proposer.initiate_prepare_request();
 
-        assert_eq!(existing_value_to_accept, None);
+        assert_eq!(prepare_result, Err(String::from("Preparing failed")));
     }
 
     #[test]
@@ -223,7 +235,7 @@ mod tests {
         proposer.num = 2;
         let existing_value_to_accept = proposer.initiate_prepare_request();
 
-        assert_eq!(existing_value_to_accept, Some(Proposal::new(1, 100)));
+        assert_eq!(existing_value_to_accept, Ok(Some(Proposal::new(1, 100))));
     }
 
     fn mock_empty_acceptor() -> Arc<Mutex<AgentBox>> {
@@ -256,9 +268,9 @@ mod tests {
         let mut proposer = Proposer::new(acceptors);
         proposer.value = Some(100);
 
-        proposer.initiate_accept_request();
+        let accept_result = proposer.initiate_accept_request();
 
-        assert_eq!(proposer.value, Some(100));
+        assert_eq!(accept_result, Ok(100));
     }
 
     #[test]
@@ -271,9 +283,9 @@ mod tests {
         let mut proposer = Proposer::new(acceptors);
         proposer.value = Some(100);
 
-        proposer.initiate_accept_request();
+        let accept_result = proposer.initiate_accept_request();
 
-        assert_eq!(proposer.value, Some(100));
+        assert_eq!(accept_result, Ok(100));
     }
 
     #[test]
@@ -287,9 +299,9 @@ mod tests {
         let mut proposer = Proposer::new(acceptors);
         proposer.value = Some(100);
 
-        proposer.initiate_accept_request();
+        let accept_result = proposer.initiate_accept_request();
 
-        assert_eq!(proposer.value, Some(100));
+        assert_eq!(accept_result, Ok(100));
     }
 
     #[test]
@@ -303,9 +315,9 @@ mod tests {
         let mut proposer = Proposer::new(acceptors);
         proposer.value = Some(100);
 
-        proposer.initiate_accept_request();
+        let accept_result = proposer.initiate_accept_request();
 
-        assert_eq!(proposer.value, None);
+        assert_eq!(accept_result, Err(String::from("Accepting failed")));
     }
 
     fn mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {

@@ -52,11 +52,11 @@ fn test_2_proposers_3_acceptors_no_learner() {
     println!("Proposers: {:#?}", proposer2);
 
     println!("  ===== Working =====");
-    // TODO: one of the following 2 would panic for now
     let result1 = proposer1.propose(100);
     let result2 = proposer2.propose(200);
     println!("Result: {:?}", result1);
 
+    // TODO: one of the following 2 would fail for now
     assert_eq!(result1, Some(100));
     assert_eq!(result2, Some(100));
 
