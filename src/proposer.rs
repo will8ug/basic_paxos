@@ -49,7 +49,7 @@ impl Proposer {
         }
     }
 
-    fn initiate_prepare_request(&self) -> Result<Option<Proposal>, String> {
+    fn initiate_prepare_request(&self) -> Result<Option<Proposal>, &str> {
         let proposal_num = self.num;
 
         let (tx0, rx) = mpsc::channel();
@@ -99,13 +99,13 @@ impl Proposer {
             valid_promise_count, total_response_count, existing_accepted_value
         );
         if valid_promise_count < self.majority() {
-            return Err(String::from("Preparing failed"));
+            return Err("Preparing failed");
         }
 
         Ok(existing_accepted_value)
     }
 
-    fn initiate_accept_request(&self) -> Result<u32, String> {
+    fn initiate_accept_request(&self) -> Result<u32, &str> {
         let proposal = Proposal::new(self.num, self.value.unwrap());
 
         let (tx0, rx) = mpsc::channel();
@@ -148,7 +148,7 @@ impl Proposer {
             self.majority()
         );
         if accepted_response_count < self.majority() {
-            Err(String::from("Accepting failed"))
+            Err("Accepting failed")
         } else {
             Ok(self.value.unwrap())
         }
@@ -225,7 +225,7 @@ mod tests {
         let proposer = Proposer::new(acceptors);
         let prepare_result = proposer.initiate_prepare_request();
 
-        assert_eq!(prepare_result, Err(String::from("Preparing failed")));
+        assert_eq!(prepare_result, Err("Preparing failed"));
     }
 
     #[test]
@@ -319,7 +319,7 @@ mod tests {
 
         let accept_result = proposer.initiate_accept_request();
 
-        assert_eq!(accept_result, Err(String::from("Accepting failed")));
+        assert_eq!(accept_result, Err("Accepting failed"));
     }
 
     fn mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
