@@ -61,7 +61,8 @@ impl Proposer {
                 println!("Preparing: {}", proposal_num);
                 let (promised_min_num, accepted_value) =
                     _acceptor.lock().unwrap().prepare(proposal_num);
-                tx.send((promised_min_num, accepted_value)).unwrap();
+                tx.send((promised_min_num, accepted_value))
+                    .unwrap_or_default();
             });
         }
 
@@ -114,7 +115,8 @@ impl Proposer {
             let mut _acceptor = Arc::clone(acceptor);
             thread::spawn(move || {
                 println!("Accepting: {:?}", proposal);
-                tx.send(_acceptor.lock().unwrap().accept(proposal)).unwrap();
+                tx.send(_acceptor.lock().unwrap().accept(proposal))
+                    .unwrap_or_default();
             });
         }
 
