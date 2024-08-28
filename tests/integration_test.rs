@@ -19,7 +19,7 @@ fn test_1_proposer_1_acceptor_no_learner() {
 
     println!("  ===== Working =====");
     let result = proposer.propose(100);
-    assert_eq!(result, Some(100));
+    assert_eq!(result, Ok(100));
 
     println!("  ===== After consensus =====");
     println!("Proposers: {:#?}", proposer);
@@ -42,7 +42,7 @@ fn test_1_proposer_3_acceptors_no_learner() {
     println!("  ===== Working =====");
     let result = proposer.propose(100);
     println!("Result: {:?}", result);
-    assert_eq!(result, Some(100));
+    assert_eq!(result, Ok(100));
 
     println!("  ===== After consensus =====");
     println!("Proposers: {:#?}", proposer);

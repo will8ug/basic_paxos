@@ -1,10 +1,29 @@
 use crate::agent::Agent;
 use crate::proposal::Proposal;
 
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 pub type AgentBox = Box<dyn Agent + Sync + Send>;
+
+#[derive(Debug, PartialEq)]
+pub enum ConsensusError {
+    PrepareError(String),
+    AcceptError(String),
+}
+
+impl Display for ConsensusError {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            ConsensusError::PrepareError(msg) => write!(f, "{}", msg),
+            ConsensusError::AcceptError(msg) => write!(f, "{}", msg),
+        }
+    }
+}
+
+impl Error for ConsensusError {}
 
 #[derive(Debug)]
 pub struct Proposer {
@@ -22,7 +41,7 @@ impl Proposer {
         }
     }
 
-    pub fn propose(&mut self, value: u32) -> Option<u32> {
+    pub fn propose(&mut self, value: u32) -> Result<u32, ConsensusError> {
         self.value = Some(value);
 
         match self.initiate_prepare_request() {
@@ -31,25 +50,25 @@ impl Proposer {
                     self.value = Some(existing_accepted_value.unwrap().value);
                 }
             }
-            Err(err_msg) => {
-                println!("{}", err_msg);
-                return None;
+            Err(e) => {
+                println!("{}", e);
+                return Err(e);
             }
         }
 
         match self.initiate_accept_request() {
             Ok(value) => {
                 println!("Consensus achieved with value [{}]", value);
-                return Some(value);
+                return Ok(value);
             }
-            Err(err_msg) => {
-                println!("{}", err_msg);
-                return None;
+            Err(e) => {
+                println!("{}", e);
+                return Err(e);
             }
         }
     }
 
-    fn initiate_prepare_request(&self) -> Result<Option<Proposal>, &str> {
+    fn initiate_prepare_request(&self) -> Result<Option<Proposal>, ConsensusError> {
         let proposal_num = self.num;
 
         let (tx0, rx) = mpsc::channel();
@@ -99,13 +118,13 @@ impl Proposer {
             valid_promise_count, total_response_count, existing_accepted_value
         );
         if valid_promise_count < self.majority() {
-            return Err("Preparing failed");
+            return Err(ConsensusError::PrepareError(String::from("Preparing failed")));
         }
 
         Ok(existing_accepted_value)
     }
 
-    fn initiate_accept_request(&self) -> Result<u32, &str> {
+    fn initiate_accept_request(&self) -> Result<u32, ConsensusError> {
         let proposal = Proposal::new(self.num, self.value.unwrap());
 
         let (tx0, rx) = mpsc::channel();
@@ -148,7 +167,7 @@ impl Proposer {
             self.majority()
         );
         if accepted_response_count < self.majority() {
-            Err("Accepting failed")
+            Err(ConsensusError::PrepareError(String::from("Accepting failed")))
         } else {
             Ok(self.value.unwrap())
         }
@@ -225,7 +244,8 @@ mod tests {
         let proposer = Proposer::new(acceptors);
         let prepare_result = proposer.initiate_prepare_request();
 
-        assert_eq!(prepare_result, Err("Preparing failed"));
+        assert!(prepare_result.is_err());
+        assert_eq!(prepare_result, Err(ConsensusError::PrepareError(String::from("Preparing failed"))));
     }
 
     #[test]
@@ -319,7 +339,8 @@ mod tests {
 
         let accept_result = proposer.initiate_accept_request();
 
-        assert_eq!(accept_result, Err("Accepting failed"));
+        assert!(accept_result.is_err());
+        assert_eq!(accept_result, Err(ConsensusError::PrepareError(String::from("Accepting failed"))));
     }
 
     fn mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
