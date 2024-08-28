@@ -8,7 +8,7 @@ use std::thread;
 
 pub type AgentBox = Box<dyn Agent + Sync + Send>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ConsensusError {
     PrepareError(String),
     AcceptError(String),
