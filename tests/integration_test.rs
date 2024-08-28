@@ -12,18 +12,18 @@ fn test_1_proposer_1_acceptor_no_learner() {
     let acceptor = Arc::new(Mutex::new(local_agent as AgentBox));
     let acceptors = vec![Arc::clone(&acceptor)];
     println!("  ===== Before Start =====");
-    println!("Acceptors: {:#?}", acceptors);
+    println!("Acceptors: {:?}", acceptors);
 
     let mut proposer = Proposer::new(acceptors);
-    println!("Proposers: {:#?}", proposer);
+    println!("Proposers: {:?}", proposer);
 
     println!("  ===== Working =====");
     let result = proposer.propose(100);
     assert_eq!(result, Ok(100));
 
     println!("  ===== After consensus =====");
-    println!("Proposers: {:#?}", proposer);
-    println!("Acceptor: {:#?}", acceptor);
+    println!("Proposers: {:?}", proposer);
+    println!("Acceptor: {:?}", acceptor);
 }
 
 #[test]
@@ -34,10 +34,10 @@ fn test_1_proposer_3_acceptors_no_learner() {
         acceptors.push(Arc::new(Mutex::new(local_agent as AgentBox)));
     }
     println!("  ===== Before Start =====");
-    println!("Acceptors: {:#?}", acceptors);
+    println!("Acceptors: {:?}", acceptors);
 
     let mut proposer = Proposer::new(acceptors);
-    println!("Proposers: {:#?}", proposer);
+    println!("Proposers: {:?}", proposer);
 
     println!("  ===== Working =====");
     let result = proposer.propose(100);
@@ -45,5 +45,5 @@ fn test_1_proposer_3_acceptors_no_learner() {
     assert_eq!(result, Ok(100));
 
     println!("  ===== After consensus =====");
-    println!("Proposers: {:#?}", proposer);
+    println!("Proposers: {:?}", proposer);
 }

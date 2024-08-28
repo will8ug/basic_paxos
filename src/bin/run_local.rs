@@ -43,13 +43,13 @@ fn test_2_proposers_3_acceptors_no_learner() {
         acceptors2.push(Arc::clone(&local_agent));
     }
     println!("  ===== Before Start =====");
-    println!("Acceptors: {:#?}", acceptors1);
-    println!("Acceptors: {:#?}", acceptors2);
+    println!("Acceptors: {:?}", acceptors1);
+    println!("Acceptors: {:?}", acceptors2);
 
     let mut proposer1 = Proposer::new(acceptors1);
     let mut proposer2 = Proposer::new(acceptors2);
-    println!("Proposers: {:#?}", proposer1);
-    println!("Proposers: {:#?}", proposer2);
+    println!("Proposers: {:?}", proposer1);
+    println!("Proposers: {:?}", proposer2);
 
     println!("  ===== Working =====");
     let result1 = proposer1.propose(100);
@@ -60,6 +60,6 @@ fn test_2_proposers_3_acceptors_no_learner() {
     assert!(result2.is_err());
 
     println!("  ===== After consensus =====");
-    println!("Proposers: {:#?}", proposer1);
-    println!("Proposers: {:#?}", proposer2);
+    println!("Proposers: {:?}", proposer1);
+    println!("Proposers: {:?}", proposer2);
 }
