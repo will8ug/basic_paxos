@@ -167,7 +167,7 @@ impl Proposer {
             self.majority()
         );
         if accepted_response_count < self.majority() {
-            Err(ConsensusError::PrepareError(String::from("Accepting failed")))
+            Err(ConsensusError::AcceptError(String::from("Accepting failed")))
         } else {
             Ok(self.value.unwrap())
         }
@@ -340,7 +340,7 @@ mod tests {
         let accept_result = proposer.initiate_accept_request();
 
         assert!(accept_result.is_err());
-        assert_eq!(accept_result, Err(ConsensusError::PrepareError(String::from("Accepting failed"))));
+        assert_eq!(accept_result, Err(ConsensusError::AcceptError(String::from("Accepting failed"))));
     }
 
     fn mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
