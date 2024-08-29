@@ -61,7 +61,7 @@ fn try_2_proposers_3_acceptors_no_learner_in_threads() {
     //     rand_sleep_time
     // );
 
-    let mut _p1 = Arc::clone(&proposer1);
+    let _p1 = Arc::clone(&proposer1);
     let handler1 = thread::spawn(move || {
         let num = rand::thread_rng().gen_range(0..10);
         println!("Going to sleep in [{}] milliseconds in thread1", num);
@@ -70,7 +70,7 @@ fn try_2_proposers_3_acceptors_no_learner_in_threads() {
         _p1.lock().unwrap().propose(100)
     });
 
-    let mut _p2 = Arc::clone(&proposer2);
+    let _p2 = Arc::clone(&proposer2);
     let handler2 = thread::spawn(move || {
         let num = rand::thread_rng().gen_range(0..10);
         println!("Going to sleep in [{}] milliseconds in thread2", num);
