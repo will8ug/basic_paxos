@@ -17,8 +17,8 @@ pub enum ConsensusError {
 impl Display for ConsensusError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            ConsensusError::PrepareError(msg) => write!(f, "{}", msg),
-            ConsensusError::AcceptError(msg) => write!(f, "{}", msg),
+            ConsensusError::PrepareError(msg) => write!(f, "[PrepareError] {}", msg),
+            ConsensusError::AcceptError(msg) => write!(f, "[AcceptError] {}", msg),
         }
     }
 }
@@ -118,7 +118,9 @@ impl Proposer {
             valid_promise_count, total_response_count, existing_accepted_value
         );
         if valid_promise_count < self.majority() {
-            return Err(ConsensusError::PrepareError(String::from("Preparing failed")));
+            return Err(ConsensusError::PrepareError(String::from(
+                "Preparing failed",
+            )));
         }
 
         Ok(existing_accepted_value)
@@ -167,7 +169,9 @@ impl Proposer {
             self.majority()
         );
         if accepted_response_count < self.majority() {
-            Err(ConsensusError::AcceptError(String::from("Accepting failed")))
+            Err(ConsensusError::AcceptError(String::from(
+                "Accepting failed",
+            )))
         } else {
             Ok(self.value.unwrap())
         }
@@ -245,7 +249,12 @@ mod tests {
         let prepare_result = proposer.initiate_prepare_request();
 
         assert!(prepare_result.is_err());
-        assert_eq!(prepare_result, Err(ConsensusError::PrepareError(String::from("Preparing failed"))));
+        assert_eq!(
+            prepare_result,
+            Err(ConsensusError::PrepareError(String::from(
+                "Preparing failed"
+            )))
+        );
     }
 
     #[test]
@@ -340,7 +349,12 @@ mod tests {
         let accept_result = proposer.initiate_accept_request();
 
         assert!(accept_result.is_err());
-        assert_eq!(accept_result, Err(ConsensusError::AcceptError(String::from("Accepting failed"))));
+        assert_eq!(
+            accept_result,
+            Err(ConsensusError::AcceptError(String::from(
+                "Accepting failed"
+            )))
+        );
     }
 
     fn mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
