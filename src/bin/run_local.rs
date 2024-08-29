@@ -6,6 +6,7 @@ use basic_paxos::acceptor::Acceptor;
 use basic_paxos::agent::{Agent, AgentBox};
 use basic_paxos::messages::Proposal;
 use basic_paxos::proposer::Proposer;
+use rand::Rng;
 
 #[derive(Debug)]
 struct LocalAgent {
@@ -54,43 +55,59 @@ fn try_2_proposers_3_acceptors_no_learner_in_threads() {
     // println!("Proposers: {:?}", proposer2);
 
     // println!("  ===== Working =====");
-    let results_vec = Arc::new(Mutex::new(Vec::with_capacity(2)));
+    // let rand_sleep_time = rand::thread_rng().gen_range(0..10);
+    // println!(
+    //     "Going to sleep in [{}] milliseconds in test",
+    //     rand_sleep_time
+    // );
 
     let mut _p1 = Arc::clone(&proposer1);
-    let mut _r1 = Arc::clone(&results_vec);
     let handler1 = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(10));
-        _r1.lock().unwrap().push(_p1.lock().unwrap().propose(100));
+        let num = rand::thread_rng().gen_range(0..10);
+        println!("Going to sleep in [{}] milliseconds in thread1", num);
+
+        thread::sleep(Duration::from_millis(num));
+        _p1.lock().unwrap().propose(100)
     });
 
     let mut _p2 = Arc::clone(&proposer2);
-    let mut _r2 = Arc::clone(&results_vec);
     let handler2 = thread::spawn(move || {
-        _r2.lock().unwrap().push(_p2.lock().unwrap().propose(200));
-    });
+        let num = rand::thread_rng().gen_range(0..10);
+        println!("Going to sleep in [{}] milliseconds in thread2", num);
 
-    handler1.join().unwrap();
-    handler2.join().unwrap();
+        thread::sleep(Duration::from_millis(num));
+        _p2.lock().unwrap().propose(200)
+    });
 
     let mut results_ok_count = 0;
     let mut results_err_count = 0;
-    for r in results_vec.lock().unwrap().iter() {
-        match r {
-            Ok(result_ok) => {
-                println!("Result OK: {:?}", result_ok);
-                results_ok_count += 1;
-            }
-            Err(result_err) => {
-                println!("Result Err: {:?}", result_err);
-                results_err_count += 1;
-            }
+    match handler1.join().unwrap() {
+        Ok(result_ok) => {
+            println!("Result OK: {:?}", result_ok);
+            results_ok_count += 1;
+        }
+        Err(result_err) => {
+            println!("Result Err: {:?}", result_err);
+            results_err_count += 1;
         }
     }
-    // println!("Result 1: {:?}", result1);
-    // println!("Result 2: {:?}", result2);
-
+    match handler2.join().unwrap() {
+        Ok(result_ok) => {
+            println!("Result OK: {:?}", result_ok);
+            results_ok_count += 1;
+        }
+        Err(result_err) => {
+            println!("Result Err: {:?}", result_err);
+            results_err_count += 1;
+        }
+    }
+    // handler1.join().unwrap();
+    // handler2.join().unwrap();
     assert_eq!(results_ok_count, 1);
     assert_eq!(results_err_count, 1);
+
+    // println!("Result 1: {:?}", result1);
+    // println!("Result 2: {:?}", result2);
 
     // println!("  ===== After consensus =====");
     // println!("Proposers: {:?}", proposer1);
