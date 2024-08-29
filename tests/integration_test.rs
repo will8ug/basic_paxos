@@ -1,7 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use basic_paxos::acceptor::Acceptor;
-use basic_paxos::proposer::{AgentBox, ConsensusError, Proposer};
+use basic_paxos::agent::AgentBox;
+use basic_paxos::proposer::{ConsensusError, Proposer};
 use common::LocalAgent;
 
 mod common;

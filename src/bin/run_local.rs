@@ -3,9 +3,9 @@ use std::thread;
 use std::time::Duration;
 
 use basic_paxos::acceptor::Acceptor;
-use basic_paxos::agent::Agent;
+use basic_paxos::agent::{Agent, AgentBox};
 use basic_paxos::proposal::Proposal;
-use basic_paxos::proposer::{AgentBox, Proposer};
+use basic_paxos::proposer::Proposer;
 
 #[derive(Debug)]
 struct LocalAgent {

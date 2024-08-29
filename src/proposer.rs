@@ -1,12 +1,10 @@
-use crate::agent::Agent;
+use crate::agent::AgentBox;
 use crate::proposal::Proposal;
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-
-pub type AgentBox = Box<dyn Agent + Sync + Send>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ConsensusError {
