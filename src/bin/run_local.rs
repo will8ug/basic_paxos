@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use basic_paxos::acceptor::Acceptor;
 use basic_paxos::agent::{Agent, AgentBox};
-use basic_paxos::proposal::Proposal;
+use basic_paxos::messages::Proposal;
 use basic_paxos::proposer::Proposer;
 
 #[derive(Debug)]

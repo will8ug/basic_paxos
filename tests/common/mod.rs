@@ -1,4 +1,4 @@
-use basic_paxos::{acceptor::Acceptor, agent::Agent, proposal::Proposal};
+use basic_paxos::{acceptor::Acceptor, agent::Agent, messages::Proposal};
 
 #[derive(Debug)]
 pub struct LocalAgent {

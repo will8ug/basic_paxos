@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use mockall::automock;
 
-use crate::proposal::Proposal;
+use crate::messages::Proposal;
 
 #[automock]
 pub trait Agent: Debug {

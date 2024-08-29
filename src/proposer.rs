@@ -1,27 +1,8 @@
 use crate::agent::AgentBox;
-use crate::proposal::Proposal;
+use crate::messages::{ConsensusError, Proposal};
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum ConsensusError {
-    PrepareError(String),
-    AcceptError(String),
-}
-
-impl Display for ConsensusError {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        match self {
-            ConsensusError::PrepareError(msg) => write!(f, "[PrepareError] {}", msg),
-            ConsensusError::AcceptError(msg) => write!(f, "[AcceptError] {}", msg),
-        }
-    }
-}
-
-impl Error for ConsensusError {}
 
 #[derive(Debug)]
 pub struct Proposer {

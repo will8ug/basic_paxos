@@ -1,4 +1,4 @@
-use crate::proposal::Proposal;
+use crate::messages::Proposal;
 use mockall::automock;
 
 #[derive(Debug)]
