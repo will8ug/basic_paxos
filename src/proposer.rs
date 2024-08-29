@@ -1,6 +1,7 @@
 use crate::agent::AgentBox;
 use crate::messages::{ConsensusError, Proposal};
 
+use std::sync::mpsc::Sender;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
@@ -48,20 +49,9 @@ impl Proposer {
     }
 
     fn initiate_prepare_request(&self) -> Result<Option<Proposal>, ConsensusError> {
-        let proposal_num = self.num;
-
-        let (tx0, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::channel();
         for acceptor in &self.acceptors {
-            let tx = tx0.clone();
-
-            let mut _acceptor = Arc::clone(acceptor);
-            thread::spawn(move || {
-                println!("Preparing: {}", proposal_num);
-                let (promised_min_num, accepted_value) =
-                    _acceptor.lock().unwrap().prepare(proposal_num);
-                tx.send((promised_min_num, accepted_value))
-                    .unwrap_or_default();
-            });
+            self._prepare_in_new_thread(Arc::clone(acceptor), tx.clone());
         }
 
         let mut max_accepted_num = 0;
@@ -106,18 +96,9 @@ impl Proposer {
     }
 
     fn initiate_accept_request(&self) -> Result<u32, ConsensusError> {
-        let proposal = Proposal::new(self.num, self.value.unwrap());
-
-        let (tx0, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::channel();
         for acceptor in &self.acceptors {
-            let tx = tx0.clone();
-
-            let mut _acceptor = Arc::clone(acceptor);
-            thread::spawn(move || {
-                println!("Accepting: {:?}", proposal);
-                tx.send(_acceptor.lock().unwrap().accept(proposal))
-                    .unwrap_or_default();
-            });
+            self._accept_in_new_thread(Arc::clone(acceptor), tx.clone());
         }
 
         let mut accepted_response_count = 0;
@@ -156,6 +137,31 @@ impl Proposer {
         }
     }
 
+    fn _prepare_in_new_thread(
+        &self,
+        acceptor: Arc<Mutex<AgentBox>>,
+        tx: Sender<(Option<u32>, Option<Proposal>)>,
+    ) {
+        let proposal_num = self.num;
+
+        thread::spawn(move || {
+            println!("Preparing: {}", proposal_num);
+            let (promised_min_num, accepted_value) = acceptor.lock().unwrap().prepare(proposal_num);
+            tx.send((promised_min_num, accepted_value))
+                .unwrap_or_default();
+        });
+    }
+
+    fn _accept_in_new_thread(&self, acceptor: Arc<Mutex<AgentBox>>, tx: Sender<Option<u32>>) {
+        let proposal = Proposal::new(self.num, self.value.unwrap());
+
+        thread::spawn(move || {
+            println!("Accepting: {:?}", proposal);
+            tx.send(acceptor.lock().unwrap().accept(proposal))
+                .unwrap_or_default();
+        });
+    }
+
     fn majority(&self) -> usize {
         self.acceptors.len() / 2 + 1
     }
@@ -176,7 +182,7 @@ mod tests {
 
     #[test]
     fn prepare_req_1_empty_acceptor() {
-        let acceptor = mock_empty_acceptor();
+        let acceptor = _mock_empty_acceptor();
         let proposer = Proposer::new(vec![acceptor]);
 
         let prepare_result = proposer.initiate_prepare_request();
@@ -189,7 +195,7 @@ mod tests {
     fn prepare_req_3_empty_acceptor() {
         let mut acceptors = Vec::with_capacity(3);
         for _ in 0..3 {
-            acceptors.push(mock_empty_acceptor());
+            acceptors.push(_mock_empty_acceptor());
         }
 
         let proposer = Proposer::new(acceptors);
@@ -203,9 +209,9 @@ mod tests {
     fn prepare_req_2_empty_acceptor_1_higher_promised() {
         let mut acceptors = Vec::with_capacity(3);
 
-        acceptors.push(mock_higher_promised_acceptor());
+        acceptors.push(_mock_higher_promised_acceptor());
         for _ in 0..2 {
-            acceptors.push(mock_empty_acceptor());
+            acceptors.push(_mock_empty_acceptor());
         }
 
         let proposer = Proposer::new(acceptors);
@@ -219,9 +225,9 @@ mod tests {
     fn prepare_req_1_empty_acceptor_2_higher_promised() {
         let mut acceptors = Vec::with_capacity(3);
 
-        acceptors.push(mock_empty_acceptor());
+        acceptors.push(_mock_empty_acceptor());
         for _ in 0..2 {
-            acceptors.push(mock_higher_promised_acceptor());
+            acceptors.push(_mock_higher_promised_acceptor());
         }
 
         let proposer = Proposer::new(acceptors);
@@ -239,7 +245,7 @@ mod tests {
     #[test]
     fn prepare_req_1_lower_accepted() {
         let mut acceptors = Vec::with_capacity(1);
-        acceptors.push(mock_lower_accepted_acceptor());
+        acceptors.push(_mock_lower_accepted_acceptor());
 
         let mut proposer = Proposer::new(acceptors);
         proposer.num = 2;
@@ -248,7 +254,7 @@ mod tests {
         assert_eq!(existing_value_to_accept, Ok(Some(Proposal::new(1, 100))));
     }
 
-    fn mock_empty_acceptor() -> Arc<Mutex<AgentBox>> {
+    fn _mock_empty_acceptor() -> Arc<Mutex<AgentBox>> {
         let mut mock_acceptor = MockAgent::new();
         mock_acceptor
             .expect_prepare()
@@ -256,13 +262,13 @@ mod tests {
         Arc::new(Mutex::new(Box::new(mock_acceptor) as AgentBox))
     }
 
-    fn mock_higher_promised_acceptor() -> Arc<Mutex<AgentBox>> {
+    fn _mock_higher_promised_acceptor() -> Arc<Mutex<AgentBox>> {
         let mut mock_acceptor = MockAgent::new();
         mock_acceptor.expect_prepare().returning(|_| (None, None));
         Arc::new(Mutex::new(Box::new(mock_acceptor) as AgentBox))
     }
 
-    fn mock_lower_accepted_acceptor() -> Arc<Mutex<AgentBox>> {
+    fn _mock_lower_accepted_acceptor() -> Arc<Mutex<AgentBox>> {
         let mut mock_acceptor = MockAgent::new();
         mock_acceptor
             .expect_prepare()
@@ -273,7 +279,7 @@ mod tests {
     #[test]
     fn accept_req_1_equal_promised() {
         let mut acceptors = Vec::with_capacity(1);
-        acceptors.push(mock_equal_promised_for_accept_req());
+        acceptors.push(_mock_equal_promised_for_accept_req());
 
         let mut proposer = Proposer::new(acceptors);
         proposer.value = Some(100);
@@ -287,7 +293,7 @@ mod tests {
     fn accept_req_3_equal_promised() {
         let mut acceptors = Vec::with_capacity(3);
         for _ in 0..3 {
-            acceptors.push(mock_equal_promised_for_accept_req());
+            acceptors.push(_mock_equal_promised_for_accept_req());
         }
 
         let mut proposer = Proposer::new(acceptors);
@@ -301,9 +307,9 @@ mod tests {
     #[test]
     fn accept_req_2_equal_promised_1_higher_promised() {
         let mut acceptors = Vec::with_capacity(3);
-        acceptors.push(mock_higher_promised_for_accept_req());
+        acceptors.push(_mock_higher_promised_for_accept_req());
         for _ in 0..2 {
-            acceptors.push(mock_equal_promised_for_accept_req());
+            acceptors.push(_mock_equal_promised_for_accept_req());
         }
 
         let mut proposer = Proposer::new(acceptors);
@@ -317,9 +323,9 @@ mod tests {
     #[test]
     fn accept_req_1_equal_promised_2_higher_promised() {
         let mut acceptors = Vec::with_capacity(3);
-        acceptors.push(mock_equal_promised_for_accept_req());
+        acceptors.push(_mock_equal_promised_for_accept_req());
         for _ in 0..2 {
-            acceptors.push(mock_higher_promised_for_accept_req());
+            acceptors.push(_mock_higher_promised_for_accept_req());
         }
 
         let mut proposer = Proposer::new(acceptors);
@@ -336,13 +342,13 @@ mod tests {
         );
     }
 
-    fn mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
+    fn _mock_equal_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
         let mut mock_acceptor = MockAgent::new();
         mock_acceptor.expect_accept().returning(|_| Some(1));
         Arc::new(Mutex::new(Box::new(mock_acceptor) as AgentBox))
     }
 
-    fn mock_higher_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
+    fn _mock_higher_promised_for_accept_req() -> Arc<Mutex<AgentBox>> {
         let mut mock_acceptor = MockAgent::new();
         mock_acceptor.expect_accept().returning(|_| None);
         Arc::new(Mutex::new(Box::new(mock_acceptor) as AgentBox))
