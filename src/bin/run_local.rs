@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 use basic_paxos::acceptor::Acceptor;
 use basic_paxos::agent::Agent;
@@ -29,10 +31,10 @@ impl Agent for LocalAgent {
 }
 
 fn main() {
-    test_2_proposers_3_acceptors_no_learner();
+    try_2_proposers_3_acceptors_no_learner_in_threads();
 }
 
-fn test_2_proposers_3_acceptors_no_learner() {
+fn try_2_proposers_3_acceptors_no_learner_in_threads() {
     let mut acceptors1 = Vec::with_capacity(3);
     let mut acceptors2 = Vec::with_capacity(3);
 
@@ -42,24 +44,55 @@ fn test_2_proposers_3_acceptors_no_learner() {
         acceptors1.push(Arc::clone(&local_agent));
         acceptors2.push(Arc::clone(&local_agent));
     }
-    println!("  ===== Before Start =====");
-    println!("Acceptors: {:?}", acceptors1);
-    println!("Acceptors: {:?}", acceptors2);
+    // println!("  ===== Before Start =====");
+    // println!("Acceptors: {:?}", acceptors1);
+    // println!("Acceptors: {:?}", acceptors2);
 
-    let mut proposer1 = Proposer::new(acceptors1);
-    let mut proposer2 = Proposer::new(acceptors2);
-    println!("Proposers: {:?}", proposer1);
-    println!("Proposers: {:?}", proposer2);
+    let proposer1 = Arc::new(Mutex::new(Proposer::new(acceptors1)));
+    let proposer2 = Arc::new(Mutex::new(Proposer::new(acceptors2)));
+    // println!("Proposers: {:?}", proposer1);
+    // println!("Proposers: {:?}", proposer2);
 
-    println!("  ===== Working =====");
-    let result1 = proposer1.propose(100);
-    let result2 = proposer2.propose(200);
-    println!("Result: {:?}", result1);
+    // println!("  ===== Working =====");
+    let results_vec = Arc::new(Mutex::new(Vec::with_capacity(2)));
 
-    assert_eq!(result1, Ok(100));
-    assert!(result2.is_err());
+    let mut _p1 = Arc::clone(&proposer1);
+    let mut _r1 = Arc::clone(&results_vec);
+    let handler1 = thread::spawn(move || {
+        thread::sleep(Duration::from_millis(10));
+        _r1.lock().unwrap().push(_p1.lock().unwrap().propose(100));
+    });
 
-    println!("  ===== After consensus =====");
-    println!("Proposers: {:?}", proposer1);
-    println!("Proposers: {:?}", proposer2);
+    let mut _p2 = Arc::clone(&proposer2);
+    let mut _r2 = Arc::clone(&results_vec);
+    let handler2 = thread::spawn(move || {
+        _r2.lock().unwrap().push(_p2.lock().unwrap().propose(200));
+    });
+
+    handler1.join().unwrap();
+    handler2.join().unwrap();
+
+    let mut results_ok_count = 0;
+    let mut results_err_count = 0;
+    for r in results_vec.lock().unwrap().iter() {
+        match r {
+            Ok(result_ok) => {
+                println!("Result OK: {:?}", result_ok);
+                results_ok_count += 1;
+            }
+            Err(result_err) => {
+                println!("Result Err: {:?}", result_err);
+                results_err_count += 1;
+            }
+        }
+    }
+    // println!("Result 1: {:?}", result1);
+    // println!("Result 2: {:?}", result2);
+
+    assert_eq!(results_ok_count, 1);
+    assert_eq!(results_err_count, 1);
+
+    // println!("  ===== After consensus =====");
+    // println!("Proposers: {:?}", proposer1);
+    // println!("Proposers: {:?}", proposer2);
 }
