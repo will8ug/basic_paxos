@@ -4,13 +4,13 @@ use basic_paxos::acceptor::Acceptor;
 use basic_paxos::agent::AgentBox;
 use basic_paxos::messages::ConsensusError;
 use basic_paxos::proposer::Proposer;
-use common::LocalAgent;
+use common::NativeAgent;
 
 mod common;
 
 #[test]
 fn test_1_proposer_1_acceptor_no_learner() {
-    let local_agent = Box::new(LocalAgent::new(Acceptor::new()));
+    let local_agent = Box::new(NativeAgent::new(Acceptor::new()));
     let acceptor = Arc::new(Mutex::new(local_agent as AgentBox));
 
     let acceptors = vec![Arc::clone(&acceptor)];
@@ -24,7 +24,7 @@ fn test_1_proposer_1_acceptor_no_learner() {
 fn test_1_proposer_3_acceptors_no_learner() {
     let mut acceptors = Vec::with_capacity(3);
     for _ in 0..3 {
-        let local_agent = Box::new(LocalAgent::new(Acceptor::new()));
+        let local_agent = Box::new(NativeAgent::new(Acceptor::new()));
         acceptors.push(Arc::new(Mutex::new(local_agent as AgentBox)));
     }
 
@@ -40,7 +40,7 @@ fn test_2_proposers_3_acceptors_no_learner_propose_in_sequence() {
     let mut acceptors2 = Vec::with_capacity(3);
 
     for _ in 0..3 {
-        let box_local_agent = Box::new(LocalAgent::new(Acceptor::new()));
+        let box_local_agent = Box::new(NativeAgent::new(Acceptor::new()));
         let local_agent = Arc::new(Mutex::new(box_local_agent as AgentBox));
         acceptors1.push(Arc::clone(&local_agent));
         acceptors2.push(Arc::clone(&local_agent));

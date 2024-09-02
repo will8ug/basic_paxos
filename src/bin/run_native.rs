@@ -9,19 +9,19 @@ use basic_paxos::proposer::Proposer;
 use rand::Rng;
 
 #[derive(Debug)]
-struct LocalAgent {
+struct NativeAgent {
     acceptor: Acceptor,
 }
 
-impl LocalAgent {
+impl NativeAgent {
     pub fn new(_acceptor: Acceptor) -> Self {
-        LocalAgent {
+        NativeAgent {
             acceptor: _acceptor,
         }
     }
 }
 
-impl Agent for LocalAgent {
+impl Agent for NativeAgent {
     fn prepare(&mut self, num: u32) -> (Option<u32>, Option<Proposal>) {
         self.acceptor.handle_prepare_request(num)
     }
@@ -40,7 +40,7 @@ fn try_2_proposers_3_acceptors_no_learner_in_threads() {
     let mut acceptors2 = Vec::with_capacity(3);
 
     for _ in 0..3 {
-        let box_local_agent = Box::new(LocalAgent::new(Acceptor::new()));
+        let box_local_agent = Box::new(NativeAgent::new(Acceptor::new()));
         let local_agent = Arc::new(Mutex::new(box_local_agent as AgentBox));
         acceptors1.push(Arc::clone(&local_agent));
         acceptors2.push(Arc::clone(&local_agent));

@@ -1,19 +1,19 @@
 use basic_paxos::{acceptor::Acceptor, agent::Agent, messages::Proposal};
 
 #[derive(Debug)]
-pub struct LocalAgent {
+pub struct NativeAgent {
     acceptor: Acceptor,
 }
 
-impl LocalAgent {
+impl NativeAgent {
     pub fn new(_acceptor: Acceptor) -> Self {
-        LocalAgent {
+        NativeAgent {
             acceptor: _acceptor,
         }
     }
 }
 
-impl Agent for LocalAgent {
+impl Agent for NativeAgent {
     fn prepare(&mut self, num: u32) -> (Option<u32>, Option<Proposal>) {
         self.acceptor.handle_prepare_request(num)
     }
